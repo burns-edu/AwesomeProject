@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, SafeAreaView, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import Note from './components/Note';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TRootStackParamList } from './App';
-import CryptoJS from 'crypto-js';
 
 export interface INote {
 	title: string;
@@ -23,8 +22,6 @@ interface IState {
 type TProps = NativeStackScreenProps<TRootStackParamList, 'Notes'> & IProps;
 
 export default class Notes extends React.Component<TProps, IState> {
-	private encryptionKey: string;
-
 	constructor(props: Readonly<TProps>) {
 		super(props);
 
@@ -33,9 +30,6 @@ export default class Notes extends React.Component<TProps, IState> {
 			newNoteTitle: '',
 			newNoteEquation: ''
 		};
-
-		const { username, password } = this.props.route.params.user;
-		this.encryptionKey = CryptoJS.SHA256(username + ':' + password + 'notes-salt').toString();
 
 		this.onNoteTitleChange = this.onNoteTitleChange.bind(this);
 		this.onNoteEquationChange = this.onNoteEquationChange.bind(this);
@@ -51,25 +45,15 @@ export default class Notes extends React.Component<TProps, IState> {
 		this.storeNotes(this.state.notes);
 	}
 
-	private encryptData(data: string): string {
-		return CryptoJS.AES.encrypt(data, this.encryptionKey).toString();
-	}
-
-	private decryptData(encryptedData: string): string {
-		const decrypted = CryptoJS.AES.decrypt(encryptedData, this.encryptionKey);
-		return decrypted.toString(CryptoJS.enc.Utf8);
-	}
-
 	private async getStoredNotes(): Promise<INote[]> {
 		const username = this.props.route.params.user.username;
 		const storageKey = 'notes-' + username;
 
 		try {
-			const encryptedValue = await AsyncStorage.getItem(storageKey);
+			const encryptedValue = await EncryptedStorage.getItem(storageKey);
 			
 			if (encryptedValue !== null) {
-				const decryptedString = this.decryptData(encryptedValue);
-				const parsed = JSON.parse(decryptedString);
+				const parsed = JSON.parse(encryptedValue);
 				return parsed.notes || [];
 			}
 			return [];
@@ -91,8 +75,7 @@ export default class Notes extends React.Component<TProps, IState> {
 			};
 			
 			const jsonValue = JSON.stringify(dataToStore);
-			const encryptedValue = this.encryptData(jsonValue);
-			await AsyncStorage.setItem(storageKey, encryptedValue);
+			await EncryptedStorage.setItem(storageKey, jsonValue);
 		} catch (error) {
 			console.error('Error saving notes:', error);
 		}
