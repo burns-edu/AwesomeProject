@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Note from './components/Note';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TRootStackParamList } from './App';
+import CryptoJS from 'crypto-js';
 
 export interface INote {
 	title: string;
@@ -22,6 +23,8 @@ interface IState {
 type TProps = NativeStackScreenProps<TRootStackParamList, 'Notes'> & IProps;
 
 export default class Notes extends React.Component<TProps, IState> {
+	private encryptionKey: string;
+
 	constructor(props: Readonly<TProps>) {
 		super(props);
 
@@ -31,6 +34,9 @@ export default class Notes extends React.Component<TProps, IState> {
 			newNoteEquation: ''
 		};
 
+		const { username, password } = this.props.route.params.user;
+		this.encryptionKey = CryptoJS.SHA256(username + ':' + password + 'notes-salt').toString();
+
 		this.onNoteTitleChange = this.onNoteTitleChange.bind(this);
 		this.onNoteEquationChange = this.onNoteEquationChange.bind(this);
 		this.addNote = this.addNote.bind(this);
@@ -38,7 +44,6 @@ export default class Notes extends React.Component<TProps, IState> {
 
 	public async componentDidMount() {
 		const existing = await this.getStoredNotes();
-
 		this.setState({ notes: existing });
 	}
 
@@ -46,23 +51,51 @@ export default class Notes extends React.Component<TProps, IState> {
 		this.storeNotes(this.state.notes);
 	}
 
+	private encryptData(data: string): string {
+		return CryptoJS.AES.encrypt(data, this.encryptionKey).toString();
+	}
+
+	private decryptData(encryptedData: string): string {
+		const decrypted = CryptoJS.AES.decrypt(encryptedData, this.encryptionKey);
+		return decrypted.toString(CryptoJS.enc.Utf8);
+	}
+
 	private async getStoredNotes(): Promise<INote[]> {
-		const suffix = this.props.route.params.user.username + '-' + this.props.route.params.user.password;
+		const username = this.props.route.params.user.username;
+		const storageKey = 'notes-' + username;
 
-		const value = await AsyncStorage.getItem('notes-' + suffix);
-
-		if (value !== null) {
-			return JSON.parse(value);
-		} else {
+		try {
+			const encryptedValue = await AsyncStorage.getItem(storageKey);
+			
+			if (encryptedValue !== null) {
+				const decryptedString = this.decryptData(encryptedValue);
+				const parsed = JSON.parse(decryptedString);
+				return parsed.notes || [];
+			}
+			return [];
+		} catch (error) {
+			console.error('Error loading notes:', error);
 			return [];
 		}
 	}
 
 	private async storeNotes(notes: INote[]) {
-		const suffix = this.props.route.params.user.username + '-' + this.props.route.params.user.password;
+		const username = this.props.route.params.user.username;
+		const storageKey = 'notes-' + username;
 
-		const jsonValue = JSON.stringify(notes);
-		await AsyncStorage.setItem('notes-' + suffix, jsonValue);
+		try {
+			const dataToStore = {
+				notes: notes,
+				username: username,
+				timestamp: new Date().toISOString()
+			};
+			
+			const jsonValue = JSON.stringify(dataToStore);
+			const encryptedValue = this.encryptData(jsonValue);
+			await AsyncStorage.setItem(storageKey, encryptedValue);
+		} catch (error) {
+			console.error('Error saving notes:', error);
+		}
 	}
 
 	private onNoteTitleChange(value: string) {
@@ -84,11 +117,14 @@ export default class Notes extends React.Component<TProps, IState> {
 			return;
 		}
 
+		const newNotes = this.state.notes.concat(note);
 		this.setState({ 
-			notes: this.state.notes.concat(note),
+			notes: newNotes,
 			newNoteTitle: '',
 			newNoteEquation: ''
 		});
+		
+		this.storeNotes(newNotes);
 	}
 
 	public render() {
