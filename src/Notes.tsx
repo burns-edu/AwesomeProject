@@ -1,3 +1,7 @@
+// Changes:
+//	- Added input validations for title and equation inputs
+//	  (see Validation Rules, validateTitle(), validateEquation(), and add Note() for changes)
+
 import React from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, SafeAreaView, ScrollView } from 'react-native';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -20,6 +24,16 @@ interface IState {
 }
 
 type TProps = NativeStackScreenProps<TRootStackParamList, 'Notes'> & IProps;
+
+// Validation rules (length and character restrictions)
+const MAX_TITLE_LENGTH = 50;
+const MAX_EQUATION_LENGTH = 200;
+
+// Title: letters, numbers, spaces, and basic punctuation only
+const TITLE_PATTERN = /^[a-zA-Z0-9 .,'!?-]+$/;
+
+// Equation: digits, arithmetic operators, parentheses, decimal points, and spaces/tabs only
+const EQUATION_PATTERN = /^[0-9+\-*/().\t ]+$/;
 
 export default class Notes extends React.Component<TProps, IState> {
 	constructor(props: Readonly<TProps>) {
@@ -90,16 +104,55 @@ export default class Notes extends React.Component<TProps, IState> {
 		this.setState({ newNoteEquation: value });
 	}
 
-	private addNote() {
-		const note: INote = {
-			title: this.state.newNoteTitle,
-			text: this.state.newNoteEquation
-		};
+	// Validate title input (length and character restrictions)
+	private validateTitle(title: string): string | null {
+		const trimmed = title.trim();
 
-		if (note.title === '' || note.text === '') {
-			Alert.alert('Error', 'Title and equation cannot be empty.');
+		if (trimmed.length === 0) {
+			return 'Title cannot be empty.';
+		}
+		if (trimmed.length > MAX_TITLE_LENGTH) {
+			return `Title cannot exceed ${MAX_TITLE_LENGTH} characters.`;
+		}
+		if (!TITLE_PATTERN.test(trimmed)) {
+			return 'Title can only contain letters, numbers, spaces, and basic punctuation.';
+		}
+		return null;
+	}
+
+	// Validate equation input (length and character restrictions)
+	private validateEquation(equation: string): string | null {
+		const trimmed = equation.trim();
+
+		if (trimmed.length === 0) {
+			return 'Equation cannot be empty.';
+		}
+		if (trimmed.length > MAX_EQUATION_LENGTH) {
+			return `Equation cannot exceed ${MAX_EQUATION_LENGTH} characters.`;
+		}
+		if (!EQUATION_PATTERN.test(trimmed)) {
+			return 'Equation can only contain numbers and + - * / ( ) symbols.';
+		}
+		return null;
+	}
+
+	private addNote() {
+		const title = this.state.newNoteTitle.trim();
+		const equation = this.state.newNoteEquation.trim();
+
+		const titleError = this.validateTitle(title);
+		if (titleError) {
+			Alert.alert('Invalid Title', titleError);
 			return;
 		}
+
+		const equationError = this.validateEquation(equation);
+		if (equationError) {
+			Alert.alert('Invalid Equation', equationError);
+			return;
+		}
+
+		const note: INote = { title, text: equation };
 
 		this.setState({ 
 			notes: this.state.notes.concat(note),
