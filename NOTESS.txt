@@ -1,0 +1,3 @@
+Secure authentication information (currently hardcoded in Login.tsx)
+Secure password verification process at login (currently verifies password using plaintext)
+Remove password usage in storage keys
