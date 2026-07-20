@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, SafeAreaView, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import Note from './components/Note';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TRootStackParamList } from './App';
@@ -47,22 +47,39 @@ export default class Notes extends React.Component<TProps, IState> {
 	}
 
 	private async getStoredNotes(): Promise<INote[]> {
-		const suffix = this.props.route.params.user.username + '-' + this.props.route.params.user.password;
+		const username = this.props.route.params.user.username;
+		const storageKey = 'notes-' + username;
 
-		const value = await AsyncStorage.getItem('notes-' + suffix);
-
-		if (value !== null) {
-			return JSON.parse(value);
-		} else {
+		try {
+			const encryptedValue = await EncryptedStorage.getItem(storageKey);
+			
+			if (encryptedValue !== null) {
+				const parsed = JSON.parse(encryptedValue);
+				return parsed.notes || [];
+			}
+			return [];
+		} catch (error) {
+			console.error('Error loading notes:', error);
 			return [];
 		}
 	}
 
 	private async storeNotes(notes: INote[]) {
-		const suffix = this.props.route.params.user.username + '-' + this.props.route.params.user.password;
+		const username = this.props.route.params.user.username;
+		const storageKey = 'notes-' + username;
 
-		const jsonValue = JSON.stringify(notes);
-		await AsyncStorage.setItem('notes-' + suffix, jsonValue);
+		try {
+			const dataToStore = {
+				notes: notes,
+				username: username,
+				timestamp: new Date().toISOString()
+			};
+			
+			const jsonValue = JSON.stringify(dataToStore);
+			await EncryptedStorage.setItem(storageKey, jsonValue);
+		} catch (error) {
+			console.error('Error saving notes:', error);
+		}
 	}
 
 	private onNoteTitleChange(value: string) {
