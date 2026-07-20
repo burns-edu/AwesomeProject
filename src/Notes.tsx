@@ -1,6 +1,6 @@
 // Changes:
 //	- Added input validations for title and equation inputs
-//	  (see Validation Rules, validateTitle(), validateEquation(), and add Note() for changes)
+//	  (see Validation Rules, validateTitle(), validateEquation(), and addNote() for changes)
 
 import React from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, SafeAreaView, ScrollView } from 'react-native';

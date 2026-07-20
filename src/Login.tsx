@@ -1,3 +1,7 @@
+// Changes:
+//	- Added input validations for username and password inputs
+//	  (see Validation Rules, validateInput(), and Login() for changes)
+
 import React from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -14,6 +18,13 @@ interface IProps {
 
 type TProps = NativeStackScreenProps<TRootStackParamList, 'Login'> & IProps;
 
+// Validation rules (length and character restrictions)
+const MAX_USERNAME_LENGTH = 30;
+const MAX_PASSWORD_LENGTH = 64;
+
+// Username: letters, numbers, underscores, and hyphens only
+const USERNAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
+
 export default function Login(props: TProps) {
 	const [username, setUsername] = React.useState('');
 	const [password, setPassword] = React.useState('');
@@ -23,11 +34,40 @@ export default function Login(props: TProps) {
 		{ username: 'bob', password: 'password' },
 	];
 
+	// Validate username and password inputs
+	function validateInput(): string | null {
+		const trimmedUsername = username.trim();
+
+		if (trimmedUsername.length === 0) {
+			return 'Username cannot be empty.';
+		}
+		if (trimmedUsername.length > MAX_USERNAME_LENGTH) {
+			return `Username cannot exceed ${MAX_USERNAME_LENGTH} characters.`;
+		}
+		if (!USERNAME_PATTERN.test(trimmedUsername)) {
+			return 'Username can only contain letters, numbers, underscores, and hyphens.';
+		}
+		if (password.length === 0) {
+			return 'Password cannot be empty.';
+		}
+		if (password.length > MAX_PASSWORD_LENGTH) {
+			return `Password cannot exceed ${MAX_PASSWORD_LENGTH} characters.`;
+		}
+		return null;
+	}
+
 	function login() {
+		const validationError = validateInput();
+		if (validationError) {
+			Alert.alert('Invalid Input', validationError);
+			return;
+		}
+
+		const trimmedUsername = username.trim();
 		let foundUser: IUser | false = false;
 
 		for (const user of users) {
-			if (username === user.username && password === user.password) {
+			if (trimmedUsername === user.username && password === user.password) {
 				foundUser = user;
 
 				break;
