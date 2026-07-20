@@ -13,9 +13,6 @@ class AppDelegate: RCTAppDelegate {
     // They will be passed down to the ViewController used by React Native.
     self.initialProps = [:]
 
-    // Prevent iCloud backup of app data
-    self.excludeAppDataFromBackup()
-
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -29,21 +26,5 @@ class AppDelegate: RCTAppDelegate {
 #else
     Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
-  }
-
-  private func excludeAppDataFromBackup() {
-    let fileManager = FileManager.default
-    guard let documentDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
-      return
-    }
-    
-    do {
-      var resourceValues = URLResourceValues()
-      resourceValues.isExcludedFromBackup = true
-      var documentDirectoryWithValues = documentDirectory
-      try documentDirectoryWithValues.setResourceValues(resourceValues)
-    } catch {
-      print("Failed to exclude app data from backup: \(error)")
-    }
   }
 }
