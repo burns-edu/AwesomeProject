@@ -38,6 +38,7 @@ export default class Notes extends React.Component<TProps, IState> {
 
 	public async componentDidMount() {
 		const existing = await this.getStoredNotes();
+
 		this.setState({ notes: existing });
 	}
 
@@ -100,14 +101,11 @@ export default class Notes extends React.Component<TProps, IState> {
 			return;
 		}
 
-		const newNotes = this.state.notes.concat(note);
 		this.setState({ 
-			notes: newNotes,
+			notes: this.state.notes.concat(note),
 			newNoteTitle: '',
 			newNoteEquation: ''
 		});
-		
-		this.storeNotes(newNotes);
 	}
 
 	public render() {
