@@ -1,6 +1,7 @@
 // Changes:
 //	- Added input validations for username and password inputs
 //	  (see Validation Rules, validateInput(), and Login() for changes)
+//	- Attempted to add hashing for password storage and verification, but was unsuccessfull
 
 import React from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
