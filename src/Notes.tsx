@@ -1,6 +1,8 @@
 // Changes:
 //	- Added input validations for title and equation inputs
 //	  (see Validation Rules, validateTitle(), validateEquation(), and addNote() for changes)
+//	- Removed password usage from storage keys; now uses 'notes-[username]'
+//	- Implemented encryption for notes
 
 import React from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, SafeAreaView, ScrollView } from 'react-native';
